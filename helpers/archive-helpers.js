@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
+var http = require('http');
 
 /*
  * You will need to reuse the same paths many times over in the course of this sprint.
@@ -25,30 +26,58 @@ exports.initialize = function(pathsObj) {
 // The following function names are provided to you to suggest how you might
 // modularize your code. Keep it clean!
 
-exports.readListOfUrls = function() {
-   var result;
+exports.readListOfUrls = function(callback) {
    fs.readFile(exports.paths.list,function(err,data) {
     if(err) {
       throw err;
     } else {
-      console.log('data is: ',data.toString().split('\n'));
-      result = data.toString().split('\n');
+      callback(data.toString().split('\n'));
     }
    });
-   return result;
 };
 
-exports.isUrlInList = function() {
-
+exports.isUrlInList = function(url, callback) {
+  callback(_.contains(exports.readListOfUrls(function(v){return v}), url));
 };
 
-exports.addUrlToList = function() {
-
+exports.addUrlToList = function(url,callback) {
+  if(!exports.isUrlInList(url,function(v){return v})) {
+   fs.writeFile(exports.paths.list,url + '\n',callback); 
+  }
 };
 
-exports.isUrlArchived = function(url) {
-  //return exports.paths.list.;
+exports.isUrlArchived = function(url,callback) {
+  fs.stat(exports.paths.archivedSites + '/' + url,callback);
 };
 
-exports.downloadUrls = function() {
-};
+exports.downloadUrls = function(urlArray) {
+  var options = {
+    host: '',
+    port: 80,
+    path: "/"
+  };
+
+  for(var i=0;i<urlArray.length;i++){
+    options.host = urlArray[i];
+    var body = '';
+
+    var req = http.request(options,function(res){
+      res.on('data',function(chunk){
+        body+=chunk;
+      });
+
+      res.on('end',function(){
+        var fixtureName = options.host;
+        var fixturePath = exports.paths.archivedSites + "/" + fixtureName;
+        fs.open(fixturePath, "w",'0666',function(err,fd){
+          console.log('FD is ',fd);
+          fs.writeFile(fixturePath, body,'utf8', function(){
+            
+            fs.close(fd);
+          });
+        });
+      });
+    });
+    req.end();  
+  }
+};  
