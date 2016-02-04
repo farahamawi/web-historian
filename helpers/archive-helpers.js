@@ -50,9 +50,16 @@ exports.isUrlArchived = function(url,callback) {
   fs.stat(exports.paths.archivedSites + '/' + url,callback);
 };
 
+exports.createFile = function(path,body){
+  fs.open(path, "w",'0666',function(err,fd){
+    fs.writeFile(path, body,'utf8', function(){
+      fs.close(fd);
+    });
+  });
+};  
+
 exports.downloadUrls = function(urlArray) {
   var options = {
-    host: '',
     port: 80,
     path: "/"
   };
@@ -67,15 +74,8 @@ exports.downloadUrls = function(urlArray) {
       });
 
       res.on('end',function(){
-        var fixtureName = options.host;
-        var fixturePath = exports.paths.archivedSites + "/" + fixtureName;
-        fs.open(fixturePath, "w",'0666',function(err,fd){
-          console.log('FD is ',fd);
-          fs.writeFile(fixturePath, body,'utf8', function(){
-            
-            fs.close(fd);
-          });
-        });
+        var path = exports.paths.archivedSites + "/" + options.host;
+        exports.createFile(path,body);
       });
     });
     req.end();  
