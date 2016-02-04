@@ -19,3 +19,8 @@ exports.serveAssets = function(res, asset, callback) {
 
 
 // As you progress, keep thinking about what helper functions you can put here!
+exports.writeResponse = function(statusCode,res, data){
+  statusCode = statusCode || 200;
+  res.writeHead(statusCode,exports.headers);
+  res.end(data);
+};
